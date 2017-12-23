@@ -1,0 +1,58 @@
+import de.undercouch.gradle.tasks.download.Download
+
+plugins {
+  id 'base'
+  id 'maven-publish'
+  id 'com.jfrog.bintray' version '1.8.0'
+  id 'de.undercouch.download' version '3.3.0'
+}
+
+group = 'io.github.ssoloff'
+
+ext {
+  artifactId = "substance${packageName ? '-' + packageName : ''}"
+  artifactDescription = "Substance look and feel${packageName ? ' (' + packageName + ')' : ''}"
+  substanceArtifactJarFileName = "${artifactId}-${version}.jar"
+  substanceArtifactJar = file("$libsDir/$substanceArtifactJarFileName")
+}
+
+task downloadSubstanceArtifactJar(type: Download) {
+    src "https://github.com/kirill-grouchnikov/substance/raw/master/drop/$version/$substanceArtifactJarFileName"
+    dest substanceArtifactJar
+    overwrite false
+}
+
+bintrayUpload.dependsOn(downloadSubstanceArtifactJar)
+
+publishing {
+  publications {
+    maven(MavenPublication) {
+      artifact substanceArtifactJar
+      artifactId project.artifactId
+    }
+  }
+}
+
+bintray {
+  user = bintrayUser
+  key = bintrayKey
+  dryRun = bintrayDryRun.toBoolean()
+  publish = true
+  publications = ['maven']
+
+  pkg {
+    repo = 'maven'
+    name = "io.github.ssoloff:$artifactId"
+    desc = artifactDescription
+    websiteUrl = 'https://github.com/ssoloff/substance-artifacts'
+    issueTrackerUrl = 'https://github.com/ssoloff/substance-artifacts/issues'
+    vcsUrl = 'https://github.com/ssoloff/substance-artifacts.git'
+    licenses = ['BSD 3-Clause']
+    publicDownloadNumbers = true
+
+    version {
+      name = "${project.version}"
+      desc = "$artifactDescription ${project.version}"
+    }
+  }
+}
